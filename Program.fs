@@ -1,14 +1,12 @@
-
 open System
 open Xunit
-
  
 type Tree =
   | Empty 
   | Node of Tree * int * Tree
 
 let largeTree =
-  [ 1 .. 10000000 ]
+  [ 1 .. 100000 ]
   |> List.fold (fun (t: Tree) i -> Node(Empty, i, t) ) Empty 
 //  |> List.fold (fun (t: Tree) i -> Node(t, i, t) ) Empty 
 
@@ -35,14 +33,15 @@ let rec invertTree (t:Tree) (continuation: Tree -> Tree ) =
         invertTree t1 (fun left -> 
             invertTree t2 (fun right ->
             continuation (Node (right, tall, left))))
-    | Leaf -> continuation Leaf 
+    | Empty -> continuation Empty 
 
-module Program = let [<EntryPoint>] main _ = 
-    let flip = invertTree largeTree id
-    printfn "ok"
-//    printfn "%A" (sum largeTree) 
-    printfn "ok2"
-//    Assert.Equal(largeTree, doubleflip)
-    Assert.Equal(largeTree, largeTree)
-    0
+module Program = 
+    let [<EntryPoint>] main _ = 
+        let flip = invertTree largeTree id
+        printfn "ok"
+    //    printfn "%A" (sum largeTree) 
+        printfn "ok2"
+    //    Assert.Equal(largeTree, doubleflip)
+        Assert.Equal(largeTree, largeTree)
+        0
 
