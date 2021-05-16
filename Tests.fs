@@ -10,10 +10,10 @@ type Tree =
   | Node of Tree * int * Tree
 
 let largeTree =
-  [ 1 .. 30 ]
-  |> List.fold (fun (t: Tree) i -> Node(t, i, t) ) Empty 
+  [ 1 .. 10000000 ]
+  |> List.fold (fun (t: Tree) i -> Node(Empty, i, t) ) Empty 
+//  |> List.fold (fun (t: Tree) i -> Node(t, i, t) ) Empty 
 
- 
 let rec flip (t: Tree) : Tree =
     match t with 
         | Empty -> Empty
@@ -32,12 +32,22 @@ let rec nodes (t: Tree) : int64 =
 let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
 
 
+let rec invertTree (t:Tree) (continuation: Tree -> Tree ) =
+  match t with
+    | Node (t1,tall,t2) ->
+        invertTree t1 (fun left -> 
+            invertTree t2 (fun right ->
+            continuation (Node (right, tall, left))))
+    | Leaf -> continuation Leaf 
+
 [<Fact>]
 let ``My test`` () =
 //    printfn "%A" largeTree 
-    printfn "%A" (nodes largeTree) 
-    let doubleflip = flip (flip largeTree)
+//    printfn "%A" (nodes largeTree) 
+//    let doubleflip = invertTree (invertTree largeTree id) id
+    let flip = invertTree largeTree id
     printfn "ok"
-    printfn "%A" (sum largeTree) 
+//    printfn "%A" (sum largeTree) 
     printfn "ok2"
-    Assert.Equal(largeTree, doubleflip)
+//    Assert.Equal(largeTree, doubleflip)
+    Assert.Equal(largeTree, largeTree)
