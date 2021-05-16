@@ -38,7 +38,7 @@ let rec invertTree (t:Tree) (continuation: Tree -> Tree ) =
         invertTree t1 (fun left -> 
             invertTree t2 (fun right ->
             continuation (Node (right, tall, left))))
-    | Leaf -> continuation Leaf 
+    | Empty -> continuation Empty 
 
 [<Fact>]
 let ``My test`` () =
