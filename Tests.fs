@@ -31,19 +31,20 @@ let rec nodes (t: Tree) : int64 =
 
 let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
 
-let rec invertTree (t:Tree) (continuation: Tree -> Tree ) =
-  match t with
-    | Node (t1,tall,t2) ->
-        invertTree t1 (fun left -> 
-            invertTree t2 (fun right ->
-            continuation (Node (right, tall, left))))
-    | Empty -> continuation Empty 
-
+let invertTree (t: Tree): Tree =
+  let rec invertTreeInner (t:Tree) (continuation: Tree -> Tree ) =
+    match t with
+      | Node (t1,tall,t2) ->
+          invertTreeInner t1 (fun left -> 
+              invertTreeInner t2 (fun right ->
+              continuation (Node (right, tall, left))))
+      | Empty -> continuation Empty 
+  invertTreeInner t id
 [<Fact>]
 let ``My test`` () =
 //    printfn "%A" largeTree 
 //    printfn "%A" (nodes largeTree) 
-    let doubleflip = invertTree (invertTree largeTree id) id
+    let doubleflip = invertTree (invertTree largeTree) 
     printfn "ok"
 //    printfn "%A" (sum largeTree) 
     printfn "ok2"
