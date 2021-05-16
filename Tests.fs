@@ -31,7 +31,6 @@ let rec nodes (t: Tree) : int64 =
 
 let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
 
-
 let rec invertTree (t:Tree) (continuation: Tree -> Tree ) =
   match t with
     | Node (t1,tall,t2) ->
@@ -44,10 +43,8 @@ let rec invertTree (t:Tree) (continuation: Tree -> Tree ) =
 let ``My test`` () =
 //    printfn "%A" largeTree 
 //    printfn "%A" (nodes largeTree) 
-//    let doubleflip = invertTree (invertTree largeTree id) id
-    let flip = invertTree largeTree id
+    let doubleflip = invertTree (invertTree largeTree id) id
     printfn "ok"
 //    printfn "%A" (sum largeTree) 
     printfn "ok2"
-//    Assert.Equal(largeTree, doubleflip)
-    Assert.Equal(largeTree, largeTree)
+    Assert.Equal(largeTree, doubleflip)
