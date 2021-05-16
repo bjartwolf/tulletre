@@ -31,6 +31,7 @@ let rec nodes (t: Tree) : int64 =
 
 let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
 
+// trading stack space for heap space
 let invertTree (t: Tree): Tree =
   let rec invertTreeInner (t:Tree) (continuation: Tree -> Tree ) =
     match t with
