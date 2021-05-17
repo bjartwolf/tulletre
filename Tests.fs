@@ -31,6 +31,7 @@ let rec nodes (t: Tree) : int64 =
 
 let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
 
+// Continuation stolen from 
 // http://fssnip.net/7VQ/title/Continuation-monad-for-mortals
 type Cont<'T, 'U> = ('T -> 'U)
 
@@ -56,15 +57,33 @@ type ContinuationBuilder() =
 /// Builder instance.
 let continuation = ContinuationBuilder()
 
-let rec invertTree2 t: Inc<Tree, _>= 
-  continuation {
-    match t with
-      | Node (t1,tall,t2) ->
-          let! t1inv = invertTree2 t1
-          let! t2inv = invertTree2 t2
-          return Node (t2inv, tall, t1inv)
-      | Empty -> return Empty 
-  }
+let invertTree2 (t: Tree): Tree =
+  let rec invertTree2Inner t: Inc<Tree, _> = 
+    continuation {
+      match t with
+        | Node (t1,tall,t2) ->
+            let! t1inv = invertTree2Inner t1
+            let! t2inv = invertTree2Inner t2
+            return Node (t2inv, tall, t1inv)
+        | Empty -> return Empty 
+    }
+  invertTree2Inner t id
+
+let treeEqual (trees: Tree*Tree) : bool =
+  let rec treeEqualInner (t1, t2): Inc<bool, _> = 
+    continuation {
+      match (t1,t2) with
+        | Empty, Empty -> return true 
+        | Node (_,_,_), Empty  -> return false
+        | Empty, Node (_,_,_) -> return false
+        | Node (t1l,tall1,t1r), Node(t2l, tall2, t2r)  ->
+            let! leftEq = treeEqualInner (t1l, t2l)
+            let! rightReq = treeEqualInner (t1r, t2r)
+            return leftEq && rightReq
+//            return (tall1 = tall2) && leftEq && rightReq
+    }
+  treeEqualInner trees id 
+
 
 // trading stack space for heap space
 let invertTree (t: Tree): Tree =
@@ -76,6 +95,13 @@ let invertTree (t: Tree): Tree =
               cont (Node (right, tall, left))))
       | Empty -> cont Empty 
   invertTreeInner t id
+
+#if DEBUG
+[<Fact>]
+let ``Assert not debug mode`` () =
+  failwith "DEBUGMODE DOES NOT WORK, the compiler does not tailcall properly and it stack overflows, use --configuration Release" 
+#endif
+
 [<Fact>]
 let ``My test`` () =
 //    print fn "%A" largeTree 
@@ -83,10 +109,8 @@ let ``My test`` () =
     let doubleflip = invertTree (invertTree largeTree) 
     printfn "ok"
 //    printfn "%A" (sum largeTree) 
-    printfn "ok2"
-    Assert.Equal(largeTree, doubleflip)
     let foo1 = invertTree largeTree
-    let foo2 = invertTree largeTree
-    Assert.Equal(invertTree foo1, invertTree foo2)
-    Assert.Equal(foo1, foo2)
+    let foo2 = invertTree2 largeTree
+    printfn "ok2"
+    Assert.True(treeEqual (foo1, foo2))
  //   Assert.Equal(largeTree, doubleflip2)
