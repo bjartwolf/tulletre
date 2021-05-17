@@ -80,6 +80,11 @@ let ``Assert not debug mode`` () =
 let ``Double flipeed are equal to themselves`` () =
     Assert.True(treeEqual (largeTree, largeTree |> invertTree |> invertTree))
 
+[<Fact>]
+let ``Half flipeed are not equal to themselves`` () =
+    Assert.False(treeEqual (largeTree, largeTree |> invertTree))
+
+
 (*
 [<Fact>]
 let ``Normal equality crashes`` () =
