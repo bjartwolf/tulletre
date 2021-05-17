@@ -93,6 +93,10 @@ let ``Different trees are not equal`` () =
   let tre1 = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
   let tre2 = Node (Node (Empty,3, Node(Empty, 1, Empty)), 2, Empty)
   Assert.False(treeEqual (tre1, tre2)) 
+  let tre3 = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
+  let tre4 = Node (Node (Node(Empty, 3, Empty), 3, Empty), 2, Empty)
+  Assert.False(treeEqual (tre3, tre4)) 
+
 
 
 (*
