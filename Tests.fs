@@ -68,6 +68,44 @@ let treeEqual (trees: Tree*Tree) : bool =
                   cont (tall1 = tall2 && leftEqual && rightEqual)))
   treeEqualInner trees id 
 
+type Cont<'T, 'U> = ('T -> 'U)
+
+/// An incomplete computation is a function which, when given a continuation,
+/// will return a value.
+type Inc<'T, 'U> = Cont<'T, 'U> -> 'U
+
+/// Creates an incomplete computation that holds the given value.
+let ret (t : 'T) : Inc<'T, _> =
+    fun (cont : Cont<'T, _>) -> cont t
+
+/// Composition of incomplete computations.
+let bind (incT : Inc<'T, _>) (wrap : 'T -> Inc<'U, _>) : Inc<'U, _> =
+    fun (contU : Cont<'U, _>) ->   // return an Inc, which is a function that takes a continuation as input
+        incT (fun t ->             // force the given incomplete computation to cough up its wrapped value
+            (wrap t) contU)        // re-wrap the raw value so it can be sent to the given continuation
+
+/// Monad definition.
+type ContinuationBuilder() =
+    member __.Return(value) = ret value
+    member __.Bind(inc, wrap) = bind inc wrap
+
+/// Builder instance.
+let continuation = ContinuationBuilder()
+
+let treeEqualM (trees: Tree*Tree) : bool =
+  let rec treeEqualInnerM (t1, t2)  = 
+    continuation {
+      match (t1,t2) with
+        | Empty, Empty -> return true 
+        | Node (_,_,_), Empty  -> return false 
+        | Empty, Node (_,_,_) -> return false 
+        | Node (t1l,tall1,t1r), Node(t2l, tall2, t2r)  ->
+            let! leftEq = treeEqualInnerM (t1l, t2l)
+            let! rightEq = treeEqualInnerM (t1r, t2r)
+            return leftEq && rightEq && tall1 = tall2 
+    }
+  treeEqualInnerM trees id
+
 #if DEBUG
 [<Fact>]
 let ``Assert not debug mode`` () =
@@ -104,4 +142,7 @@ let ``Different trees are not equal`` () =
 let ``Normal equality crashes`` () =
   Assert.Throws<System.Exception>(
     (fun () -> (largeTree = (largeTree |> invertTree |> invertTree)) |> ignore))
+[<Fact>]
+let ``Double flipeed are equal to themselves even with monadic equality `` () =
+    Assert.True(treeEqualM (largeTree, largeTree |> invertTree |> invertTree))
 *)
