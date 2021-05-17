@@ -2,7 +2,7 @@ module Tests
 
 open System
 open Xunit
-
+open FsUnit 
 
  
 type Tree =
@@ -11,7 +11,7 @@ type Tree =
 
 let largeTree =
   [ 1 .. 10000000 ]
-  |> List.fold (fun (t: Tree) i -> Node(Empty, i, t) ) Empty 
+  |> List.fold (fun (t: Tree) i -> Node(t, i, Empty) ) Empty 
 //  |> List.fold (fun (t: Tree) i -> Node(t, i, t) ) Empty 
 
 let rec flip (t: Tree) : Tree =
@@ -31,44 +31,7 @@ let rec nodes (t: Tree) : int64 =
 
 let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
 
-// Continuation stolen from 
-// http://fssnip.net/7VQ/title/Continuation-monad-for-mortals
-type Cont<'T, 'U> = ('T -> 'U)
-
-/// An incomplete computation is a function which, when given a continuation,
-/// will return a value.
-type Inc<'T, 'U> = Cont<'T, 'U> -> 'U
-
-/// Creates an incomplete computation that holds the given value.
-let ret (t : 'T) : Inc<'T, _> =
-    fun (cont : Cont<'T, _>) -> cont t
-
-/// Composition of incomplete computations.
-let bind (incT : Inc<'T, _>) (wrap : 'T -> Inc<'U, _>) : Inc<'U, _> =
-    fun (contU : Cont<'U, _>) ->   // return an Inc, which is a function that takes a continuation as input
-        incT (fun t ->             // force the given incomplete computation to cough up its wrapped value
-            (wrap t) contU)        // re-wrap the raw value so it can be sent to the given continuation
-
-/// Monad definition.
-type ContinuationBuilder() =
-    member __.Return(value) = ret value
-    member __.Bind(inc, wrap) = bind inc wrap
-
-/// Builder instance.
-let continuation = ContinuationBuilder()
-
-let invertTree2 (t: Tree): Tree =
-  let rec invertTree2Inner t: Inc<Tree, _> = 
-    continuation {
-      match t with
-        | Node (t1,tall,t2) ->
-            let! t1inv = invertTree2Inner t1
-            let! t2inv = invertTree2Inner t2
-            return Node (t2inv, tall, t1inv)
-        | Empty -> return Empty 
-    }
-  invertTree2Inner t id
-
+(*
 let treeEqual (trees: Tree*Tree) : bool =
   let rec treeEqualInner (t1, t2): Inc<bool, _> = 
     continuation {
@@ -83,8 +46,7 @@ let treeEqual (trees: Tree*Tree) : bool =
 //            return (tall1 = tall2) && leftEq && rightReq
     }
   treeEqualInner trees id 
-
-
+*)
 // trading stack space for heap space
 let invertTree (t: Tree): Tree =
   let rec invertTreeInner (t:Tree) (cont: Tree -> Tree ) =
@@ -96,6 +58,18 @@ let invertTree (t: Tree): Tree =
       | Empty -> cont Empty 
   invertTreeInner t id
 
+let treeEqual (trees: Tree*Tree) : bool =
+  let rec treeEqualInner (t1, t2) (cont: bool -> bool) = 
+      match (t1,t2) with
+        | Empty, Empty -> cont true 
+        | Node (_,_,_), Empty  -> cont false 
+        | Empty, Node (_,_,_) -> cont false 
+        | Node (t1l,tall1,t1r), Node(t2l, tall2, t2r)  ->
+            treeEqualInner (t1l, t2l) (fun leftEqual ->
+              treeEqualInner (t1r, t2r) ( fun rightEqual -> 
+                  cont (tall1 = tall2 && leftEqual && rightEqual)))
+  treeEqualInner trees id 
+
 #if DEBUG
 [<Fact>]
 let ``Assert not debug mode`` () =
@@ -103,14 +77,12 @@ let ``Assert not debug mode`` () =
 #endif
 
 [<Fact>]
-let ``My test`` () =
-//    print fn "%A" largeTree 
-//    printfn "%A" (nodes largeTree) 
-    let doubleflip = invertTree (invertTree largeTree) 
-    printfn "ok"
-//    printfn "%A" (sum largeTree) 
-    let foo1 = invertTree largeTree
-    let foo2 = invertTree2 largeTree
-    printfn "ok2"
-    Assert.True(treeEqual (foo1, foo2))
- //   Assert.Equal(largeTree, doubleflip2)
+let ``Double flipeed are equal to themselves`` () =
+    Assert.True(treeEqual (largeTree, largeTree |> invertTree |> invertTree))
+
+(*
+[<Fact>]
+let ``Normal equality crashes`` () =
+  Assert.Throws<System.Exception>(
+    (fun () -> (largeTree = (largeTree |> invertTree |> invertTree)) |> ignore))
+*)
