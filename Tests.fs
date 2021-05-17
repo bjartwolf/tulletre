@@ -29,8 +29,6 @@ let rec nodes (t: Tree) : int64 =
         | Empty -> 0L 
         | Node (t1,num,t2) -> 1L + nodes(t1) + nodes(t2) 
 
-let tre = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
-
 (*
 let treeEqual (trees: Tree*Tree) : bool =
   let rec treeEqualInner (t1, t2): Inc<bool, _> = 
@@ -83,6 +81,18 @@ let ``Double flipeed are equal to themselves`` () =
 [<Fact>]
 let ``Half flipeed are not equal to themselves`` () =
     Assert.False(treeEqual (largeTree, largeTree |> invertTree))
+
+[<Fact>]
+let ``Equal trees are equal`` () =
+  let tre1 = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
+  let tre2 = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
+  Assert.True(treeEqual (tre1, tre2)) 
+
+[<Fact>]
+let ``Different trees are not equal`` () =
+  let tre1 = Node (Node (Empty,3, Node(Empty, 3, Empty)), 2, Empty)
+  let tre2 = Node (Node (Empty,3, Node(Empty, 1, Empty)), 2, Empty)
+  Assert.False(treeEqual (tre1, tre2)) 
 
 
 (*
