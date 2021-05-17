@@ -29,22 +29,7 @@ let rec nodes (t: Tree) : int64 =
         | Empty -> 0L 
         | Node (t1,num,t2) -> 1L + nodes(t1) + nodes(t2) 
 
-(*
-let treeEqual (trees: Tree*Tree) : bool =
-  let rec treeEqualInner (t1, t2): Inc<bool, _> = 
-    continuation {
-      match (t1,t2) with
-        | Empty, Empty -> return true 
-        | Node (_,_,_), Empty  -> return false
-        | Empty, Node (_,_,_) -> return false
-        | Node (t1l,tall1,t1r), Node(t2l, tall2, t2r)  ->
-            let! leftEq = treeEqualInner (t1l, t2l)
-            let! rightReq = treeEqualInner (t1r, t2r)
-            return leftEq && rightReq
-//            return (tall1 = tall2) && leftEq && rightReq
-    }
-  treeEqualInner trees id 
-*)
+ 
 // trading stack space for heap space
 let invertTree (t: Tree): Tree =
   let rec invertTreeInner (t:Tree) (cont: Tree -> Tree ) =
@@ -88,6 +73,7 @@ let bind (incT : Inc<'T, _>) (wrap : 'T -> Inc<'U, _>) : Inc<'U, _> =
 type ContinuationBuilder() =
     member __.Return(value) = ret value
     member __.Bind(inc, wrap) = bind inc wrap
+    member __.Delay(mk) = fun c -> mk () c 
 
 /// Builder instance.
 let continuation = ContinuationBuilder()
@@ -105,6 +91,18 @@ let treeEqualM (trees: Tree*Tree) : bool =
             return leftEq && rightEq && tall1 = tall2 
     }
   treeEqualInnerM trees id
+
+let invertTreeM (t: Tree): Tree =
+  let rec invertTreeInner (t:Tree) = 
+    continuation {
+      match t with
+        | Node (t1,tall,t2) ->
+            let! inv1 = invertTreeInner t1 
+            let! inv2 = invertTreeInner t2 
+            return Node (inv2, tall, inv1)
+        | Empty -> return Empty 
+    }
+  invertTreeInner t id
 
 #if DEBUG
 [<Fact>]
@@ -135,6 +133,15 @@ let ``Different trees are not equal`` () =
   let tre4 = Node (Node (Node(Empty, 3, Empty), 3, Empty), 2, Empty)
   Assert.False(treeEqual (tre3, tre4)) 
 
+[<Fact>]
+let ``Double flipeed are equal to themselves even with monadic equality `` () =
+    Assert.True(treeEqualM (largeTree, largeTree |> invertTree |> invertTree))
+
+[<Fact>]
+let ``Flips are equal`` () =
+    Assert.True(treeEqualM (largeTree |> invertTree, largeTree |> invertTreeM ))
+
+
 
 
 (*
@@ -142,7 +149,4 @@ let ``Different trees are not equal`` () =
 let ``Normal equality crashes`` () =
   Assert.Throws<System.Exception>(
     (fun () -> (largeTree = (largeTree |> invertTree |> invertTree)) |> ignore))
-[<Fact>]
-let ``Double flipeed are equal to themselves even with monadic equality `` () =
-    Assert.True(treeEqualM (largeTree, largeTree |> invertTree |> invertTree))
 *)
