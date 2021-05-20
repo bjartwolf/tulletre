@@ -11,19 +11,21 @@ type Tree =
 
 let largeTree =
   [ 1 .. 10000000 ]
-  |> List.fold (fun (t: Tree) i -> Node(t, i, Empty) ) Empty 
-//  |> List.fold (fun (t: Tree) i -> Node(t, i, t) ) Empty 
+//  |> List.fold (fun (t: Tree) i -> Node(t, i, Empty) ) Empty 
+  |> List.fold (fun (t: Tree) i -> Node(Empty, i, t) ) Empty 
 
 let rec flip (t: Tree) : Tree =
     match t with 
         | Empty -> Empty
         | Node (t1,num,t2) -> Node (flip t2, num, flip t1)
 
+// TODO REFACOTR
 let rec sum (t: Tree) : int64 =
     match t with 
         | Empty -> 0L
         | Node (t1,num,t2) -> int64(num) + sum(t1) + sum(t2) 
 
+// TODO REFACOTR
 let rec nodes (t: Tree) : int64 =
     match t with 
         | Empty -> 0L 
@@ -103,6 +105,22 @@ let invertTreeM (t: Tree): Tree =
         | Empty -> return Empty 
     }
   invertTreeInner t id
+
+let pure' x = fun () -> x  
+let apply f x = fun () -> 
+                  let value = x()
+                  let myFunc = f()
+                  myFunc value
+
+let map' fn = apply (pure' fn)
+
+
+let bind' (f: ('a -> (unit -> 'b))): (unit -> 'a) -> (unit -> 'b) = 
+  fun (foo: (unit -> 'a)) ->
+    let a = foo()
+    f a
+
+// How would one write this...
 
 #if DEBUG
 [<Fact>]
